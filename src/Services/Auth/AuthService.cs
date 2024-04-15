@@ -5,11 +5,21 @@ using UserJwt.Dtos.Auth;
 using UserJwt.Models;
 using UserJwt.Repositories;
 using UserJwt.Services.Auth;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
-class AuthService(IUserRepository userRepository, IMapper mapper) : IAuthService
+
+class AuthService(
+  IUserRepository userRepository,
+  IMapper mapper,
+  IConfiguration config
+) : IAuthService
 {
   private readonly IUserRepository _userRepository = userRepository;
   private readonly IMapper _mapper = mapper;
+  private readonly IConfiguration _config = config;
 
   public async Task<User> SignUp(SignUpDto signUpDto)
   {
@@ -48,9 +58,28 @@ class AuthService(IUserRepository userRepository, IMapper mapper) : IAuthService
       throw new AppException(StatusCodes.Status401Unauthorized, "Invalid password");
     }
 
+    var claims = new[] {
+      new Claim("user_id", existentUser.Id),
+      new Claim("email", existentUser.Email),
+    };
+
+    var secretKey = _config.GetValue<string>("JwtSecretKey")
+      ?? throw new AppException(StatusCodes.Status500InternalServerError, "Internal server error");
+
+    var jwt = new JwtSecurityToken(
+      claims: claims,
+      expires: DateTime.UtcNow.AddHours(24),
+      signingCredentials: new SigningCredentials(
+        new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
+        SecurityAlgorithms.HmacSha256
+      )
+    );
+
+    var jwtString = new JwtSecurityTokenHandler().WriteToken(jwt);
+
     var response = new SignInResponseDto
     {
-      Token = "the jwt lies here",
+      Token = jwtString,
       User = _mapper.Map<UserDto>(existentUser)
     };
 
