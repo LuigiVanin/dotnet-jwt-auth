@@ -1,4 +1,4 @@
-using Dtos.User;
+using UserJwt.Dtos.User;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
 

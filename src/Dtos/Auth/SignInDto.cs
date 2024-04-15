@@ -1,5 +1,5 @@
 using System.ComponentModel.DataAnnotations;
-using Dtos.User;
+using UserJwt.Dtos.User;
 
 namespace UserJwt.Dtos.Auth
 {

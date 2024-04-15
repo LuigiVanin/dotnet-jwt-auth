@@ -22,5 +22,10 @@ namespace UserJwt.Repositories
             await _database.SaveChangesAsync();
             return user;
         }
+
+        public async Task<User?> FindById(string id)
+        {
+            return await _database.Users.FindAsync(new { Id = id });
+        }
     }
 }

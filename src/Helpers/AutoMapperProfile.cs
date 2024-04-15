@@ -1,5 +1,5 @@
 using AutoMapper;
-using Dtos.User;
+using UserJwt.Dtos.User;
 using UserJwt.Dtos.Auth;
 using UserJwt.Models;
 
