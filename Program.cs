@@ -4,6 +4,7 @@ using UserJwt.Context;
 using UserJwt.Middlewares;
 using UserJwt.Repositories;
 using UserJwt.Services.Auth;
+using UserJwt.src.Services.User;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,7 +22,9 @@ builder.Services.AddSwaggerGen(document =>
 });
 
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+
 builder.Services.AddAutoMapper(typeof(Program).Assembly);
 builder.Services.AddControllers().AddJsonOptions(options =>
     options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles

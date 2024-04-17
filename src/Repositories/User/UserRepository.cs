@@ -25,7 +25,8 @@ namespace UserJwt.Repositories
 
         public async Task<User?> FindById(string id)
         {
-            return await _database.Users.FindAsync(new { Id = id });
+            var result = await _database.Users.FindAsync(id);
+            return result;
         }
     }
 }

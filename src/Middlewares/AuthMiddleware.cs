@@ -1,3 +1,9 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Text;
+using Microsoft.IdentityModel.Tokens;
+using UserJwt.Repositories;
+using UserJwt.src.Services.User;
+
 namespace UserJwt.Middlewares
 {
 
@@ -12,11 +18,9 @@ namespace UserJwt.Middlewares
             context.Response.WriteAsJsonAsync(new { Message = "Unauthorized", StatusCode = 401 });
         }
 
-        public async Task InvokeAsync(HttpContext context)
+        public async Task InvokeAsync(HttpContext context, IConfiguration config, IUserRepository userRepository)
         {
-            Console.WriteLine("\n================== Middleware ==================\n");
-            var authorizationString = context.Request.Headers["Authorization"].ToString();
-            Console.WriteLine($"token {authorizationString}");
+            var authorizationString = context.Request.Headers.Authorization.ToString();
 
             if (string.IsNullOrEmpty(authorizationString))
             {
@@ -26,7 +30,6 @@ namespace UserJwt.Middlewares
 
             var authType = authorizationString.Split(" ")[0];
             var jwt = authorizationString.Split(" ")[1];
-            Console.WriteLine($"JWT TOKEN: {jwt}");
 
             if (authType != "Bearer" || string.IsNullOrEmpty(jwt))
             {
@@ -34,9 +37,52 @@ namespace UserJwt.Middlewares
                 return;
             }
 
+            var secretKeyString = config.GetValue<string>("JwtSecretKey");
+
+            if (string.IsNullOrEmpty(secretKeyString))
+            {
+                UnauthorizedError(context);
+                return;
+            }
+
+            var secretKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKeyString));
+
+            var tokenHandler = new JwtSecurityTokenHandler();
+
+            try
+            {
+                tokenHandler.ValidateToken(jwt, new TokenValidationParameters
+                {
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = secretKey,
+                    ValidateIssuer = false,
+                    ValidateAudience = false,
+                    ClockSkew = TimeSpan.Zero
+                }, out SecurityToken validatedToken);
+
+                var jwtSecurityToken = (JwtSecurityToken)validatedToken;
+
+                string userId = jwtSecurityToken.Claims.First(claim => claim.Type == "user_id").Value ?? "";
+
+                var user = await userRepository.FindById(userId);
+
+                if (user == null)
+                {
+                    UnauthorizedError(context);
+                    return;
+                }
 
 
-            await _next(context);
+                context.Items["User"] = user;
+
+                await _next(context);
+            }
+            catch
+            {
+                UnauthorizedError(context);
+                return;
+            }
+
         }
     }
 }
