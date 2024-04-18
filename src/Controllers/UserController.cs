@@ -20,8 +20,12 @@ namespace UserJwt.Controllers
         )]
         public async Task<ActionResult<UserDto>> GetUser([FromRoute] string id)
         {
-            // var user = context.Items["User"] as User;
+            User? user = HttpContext.Items["User"] as User;
 
+            if (user == null || user.Id != id)
+            {
+                return Unauthorized();
+            }
 
             return Ok(await _userService.FindUserById(id));
         }
